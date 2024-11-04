@@ -1,0 +1,300 @@
+
+CREATE DATABASE Retail_2
+USE Retail_2
+
+--Q1
+
+--BEGIN
+
+SELECT
+COUNT( DOB) AS TOTAL_ROWS
+FROM
+CUSTOMER ;
+
+SELECT
+COUNT( prod_cat_code ) AS TOTAL_ROWS
+FROM
+prod_cat_info
+
+SELECT
+COUNT(transaction_id ) AS TOTAL_ROWS
+FROM
+TRANSACTIONS
+
+--END
+
+--Q2
+
+SELECT
+COUNT (Qty) AS TOTAL_TRANC_RETURN
+FROM 
+TRANSACTIONS
+WHERE
+QTY<0 ;
+
+--Q3
+
+SELECT
+CONVERT( DATE ,tran_date,106) as DATE_FORMAT
+FROM
+TRANSACTIONS;
+
+SELECT
+CONVERT( DATE ,DOB,105) as DATE_FORMAT
+FROM
+CUSTOMER;
+
+
+--Q4
+
+
+SELECT top 1
+DATEDIFF(day, (SELECT MIN(tran_date)  from TRANSACTIONS ),(SELECT MAX(tran_date) from TRANSACTIONS)) AS DAY_DIFF,
+DATEDIFF(MONTH, (SELECT MIN(tran_date)  from TRANSACTIONS ),(SELECT MAX(tran_date) from TRANSACTIONS)) AS MONTH_DIFF,
+DATEDIFF(YEAR, (SELECT MIN(tran_date)  from TRANSACTIONS ),(SELECT MAX(tran_date) from TRANSACTIONS)) AS YEAR_DIFF 
+FROM
+TRANSACTIONS;
+
+--END
+
+--Q4
+
+SELECT
+prod_cat , prod_subcat
+FROM PRODUCT
+WHERE 
+prod_subcat = 'DIY'
+
+--END
+
+-----------------------------------------------------------------------------------------------
+
+--Q1
+select
+Store_type , sum(rate) as total_revenue
+from 
+transactions
+group by
+store_type
+order by
+Store_type
+
+--END
+
+--Q2
+
+SELECT
+(select COUNT(Gender) from Customer WHERE Gender = 'M') AS MALE,
+(SELECT COUNT(Gender)from Customer WHERE Gender = 'F') AS FEMALE 
+FROM Customer ;
+
+--END
+
+--Q3
+
+SELECT TOP 1 
+city_code ,count(*) as No_of_customer 
+from 
+Customer 
+GROUP BY city_code 
+ORDER BY COUNT(*) DESC
+ 
+
+-- END
+
+--Q4
+SELECT 
+SUM(prod_sub_cat_code) AS NO_OF_SUB_CAT
+FROM
+PRODUCT
+WHERE  PROD_CAT = 'BOOKS'
+
+--- END
+
+--Q5
+
+SELECT
+prod_cat AS MAX_PRODUCT,SUM(ABS(QTY)) AS TOTAL_ORDERS
+FROM
+Transactions 
+INNER JOIN prod_cat_info ON Transactions.prod_cat_code = product.prod_cat_code
+WHERE 
+prod_cat= (SELECT TOP 1 prod_cat from product GROUP BY prod_cat ORDER BY COUNT(prod_cat) DESC)
+GROUP BY
+prod_cat
+
+--END
+
+--Q6
+
+SELECT
+SUM(total_amt) AS NET_TOTAL_OF_ELECTRONICS_BOOKS 
+FROM
+Transactions 
+INNER JOIN product ON Transactions.prod_cat_code = product.prod_cat_code
+WHERE 
+prod_cat IN ('Electronics','Books') ;
+
+--END
+
+--Q7
+
+SELECT
+COUNT(transaction_id) as transaction_1, cust_id
+FROM
+Transactions
+WHERE
+Qty > 0
+group by
+cust_id 
+having
+COUNT(transaction_id) > 10
+
+--END
+
+--Q8
+
+SELECT
+prod_cat, sum(total_amt) as Total_revenue 
+FROM
+Transactions
+INNER JOIN prod_cat_info ON Transactions.prod_cat_code = prod_cat_info.prod_cat_code
+WHERE 
+prod_cat IN ('Electronics' ,'Clothing') and Store_type = 'Flagship store'
+group by
+prod_cat
+union all
+select 'Grand Total' as COL1, sum(total_amt) As total_revenue 
+FROM
+Transactions
+INNER JOIN prod_cat_info ON Transactions.prod_cat_code = prod_cat_info.prod_cat_code
+WHERE 
+prod_cat IN ('Electronics' ,'Clothing') and Store_type = 'Flagship store'
+
+
+-- END
+
+--Q9
+
+SELECT
+prod_cat , Gender, CONCAT(Sum(Rate),' ','RS') as Total_Revenue_prodsub_cat
+from
+Customer
+INNER JOIN Transactions  ON Customer.customer_Id = Transactions.cust_id INNER JOIN prod_cat_info ON Transactions.prod_subcat_code = prod_cat_info.prod_sub_cat_code
+where
+Gender = 'M' and prod_cat = 'Electronics'
+group by
+prod_cat , Gender 
+
+
+--END
+
+--Q10(select sum(rate) from Transactions ) * 100 )as Total_percentage
+
+--BEGIN
+select * from (SeLECT top 5
+prod_subcat , SUM(total_amt) / (select sum(total_amt) from transactions) AS Sales_per 
+FROM
+Transactions
+INNER JOIN prod_cat_info ON Transactions.prod_subcat_code = prod_cat_info.prod_sub_cat_code
+group by
+prod_subcat 
+order by
+sum(total_amt ) desc) as T1 left join
+(SeLECT 
+ prod_subcat,abs(SUM(qty)) / (select abs(sum(qty)) from transactions) AS Return_perc
+FROM
+Transactions
+INNER JOIN prod_cat_info ON Transactions.prod_subcat_code = prod_cat_info.prod_sub_cat_code
+where  qty<0
+group by
+prod_subcat ) as T2 on T1.prod_subcat = T2.prod_subcat
+
+--END / 
+
+--Q11
+
+--BEGIN
+
+SELECT
+DATEDIFF(YEAR,DOB,GETDATE()) AS AGE_OF_CX , CONCAT (SUM(RATE), ' ' , 'RS') AS REVENUE , cust_id
+FROM
+Customer
+INNER JOIN Transactions  ON Customer.customer_Id = Transactions.cust_id 
+WHERE 
+DATEDIFF(YEAR,DOB,GETDATE()) <= 35 AND  DATEDIFF(YEAR,DOB,GETDATE()) >=25 AND DATEDIFF(DAY,tran_date,(SELECT MAX(TRAN_DATE) FROM TRANSACTIONS))<= 30
+GROUP BY 
+DATEDIFF(YEAR,dob,GETDATE()) , cust_id
+order by
+ revenue desc
+
+--END
+
+-- BEGIN
+
+--Q 12
+
+SELECT top 1
+prod_cat,sum(total_amt) as Value_of_returns , sum(qty) As Return_Qty
+from Transactions 
+inner join prod_cat_info on  Transactions.prod_cat_code =  prod_cat_info.prod_cat_code
+where
+DATEDIFF(MONTH,TRAN_DATE,(SELECT MAX(TRAN_DATE) FROM TRANSACTIONS)) <= 3 and Qty < 0
+group by
+prod_cat
+order by
+sum(total_amt) desc
+
+--END
+
+--BEGIN
+
+--Q13
+
+SELECT top 1
+STORE_TYPE , SUM(total_amt) as TOTAL_REVENUE , Count(prod_cat) as Quantity_sold 
+from Transactions 
+inner join prod_cat_info on  Transactions.prod_cat_code = prod_cat_info.prod_cat_code 
+GROUP BY
+Store_type
+ORDER BY
+TOTAL_REVENUE DESC
+
+--END
+
+--BEGIN
+
+--Q14
+
+
+SELECT 
+ PROD_CAT ,AVG(total_amt) AS Avg_revenue 
+from Transactions 
+inner join prod_cat_info on  Transactions.prod_cat_code = prod_cat_info.prod_cat_code
+GROUP BY PROD_CAT
+having
+AVG(total_amt) > (SELECT  AVG(total_amt) from Transactions)
+
+--END
+
+--Q15
+
+SELECT top 5 * from( select
+prod_subcat , sum(rate) as Total_revenue , avg(rate) As Avg_revenue
+from Transactions 
+inner join prod_cat_info on  Transactions.prod_subcat_code = prod_cat_info.prod_sub_cat_code
+group by
+prod_subcat) as T1
+order by
+T1.total_revenue desc
+
+-- End
+ 
+
+
+
+
+
+
+
+
